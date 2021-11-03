@@ -9,6 +9,8 @@ import networkx as nx
 import matplotlib.pyplot as plt
 import pandas as pd
 import hashlib 
+from numpy import linalg as LA
+import numpy as np
 
 # This is just a hash for debbugind and display purposes
 def compute_cheap_hash(txt , length = 4):
@@ -21,7 +23,7 @@ def compute_cheap_hash(txt , length = 4):
 #############################################
 ### 1. Preprocessing the initial CSV File ###
 #############################################
-
+ 
 # Local path to CSV
 local_path_csv = r'C:\Users\Leonardo REGINO\Documents\Projectos Perso\Modelos SIR\Files\Data_set\Localidad_Usaquen_Edges_20210131.csv'
 
@@ -43,7 +45,7 @@ df = df.drop_duplicates()
 df_single_node = df[df["id1"] == "0012"]
 
 ### 2. Load graph from edges df ###
-G = nx.from_pandas_edgelist(df_single_node,'id1','id2')
+G = nx.from_pandas_edgelist(df,'id1','id2')
 
 
 # show graph general info 
@@ -55,31 +57,52 @@ print("------")
 
 
 ## todo : 1. Sample graph 
-
 nodes_sample = df["id1"].sample(2)
-
 G_sub = G.subgraph(nodes_sample)
 
+
+
+
 # Plot graph 
-nx.draw(G, with_labels=True)
-plt.savefig("Simple_path.png") # save as PNG
-plt.show() # display
+#nx.draw(G, with_labels=True)
+#plt.savefig("Simple_path.png") # save as PNG
+#plt.show() # display
+
 
 
 
 ## todo : 2. Calculate centrality measurements per node 
 degrees = nx.degree_centrality(G)
-katz = nx.katz_centrality(G)
+# alpha < 1/spectral_radious for the KAtz to converge (check the definition)
+katz = nx.katz_centrality(G, alpha = 0.001, max_iter = 1000) ## Does  converge
 closeness = nx.closeness_centrality(G)
 betweeness = nx.betweenness_centrality(G)
 eigs = nx.eigenvector_centrality(G)
 
 
-### Assemble 
+### Assemble ###
 
-df_centr = pd.DataFrame([degrees, katz, closeness, betweeness, eigs]).transpose()
+df_centr = pd.DataFrame([degrees,  closeness, katz, betweeness, eigs]).transpose()
 
-df_centr.columns = ['degrees', 'katz', 'closeness', 'betweeness', 'eigs']
+df_centr.columns = ['degrees', 'closeness', 'katz','betweeness', 'eigs']
 
+
+
+
+#####################################################
+### 3. Newton-Raphson for the Final Size R_i(inf) ###
+#####################################################
+
+## Usar SCIPY ROOT and INTEGRATE
+
+
+## get Adjacency matrix ##
+A = nx.to_numpy_array(G)
+Spec_Rad = LA.eig(A)
+
+#maxcompabs = Spec_Rad[np.abs(Spec_Rad).argmax()] 
+#eig_val[np.abs(eig_val).argmax()]
+
+comp = nx.connected_components(G)
 
 
